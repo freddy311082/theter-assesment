@@ -75,7 +75,19 @@ void TradingClient::placeOrder(const Order &order) {
     m_clientToEngineChannel->sendPlaceOrder(m_clientId, std::move(msg));
 }
 
+void TradingClient::cancelOrder(int orderId) {
+    std::cout << "Client " << m_clientId << " is requesting to cancel order ID=" << orderId << std::endl;
+
+    if (auto channel = m_clientToEngineChannel) {
+        channel->sendCancelOrder(m_clientId, std::make_unique<CancelOrderMsg>(orderId));
+    } else {
+        std::cerr << "Client " << m_clientId << " has no active channel to cancel order." << std::endl;
+    }
+}
+
 void TradingClient::handle(RequestRejectedMsg &msg, int clientId) {
     std::cout << "[Client " << clientId << "] Order rejected: ID="
             << msg.orderId() << ", Reason=" << msg.reason().description() << "\n";
 }
+
+

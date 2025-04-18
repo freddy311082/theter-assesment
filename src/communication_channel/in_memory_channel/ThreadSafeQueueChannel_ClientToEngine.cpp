@@ -17,6 +17,8 @@ void ThreadSafeQueueChannel_ClientToEngine::sendPlaceOrder(int clientId, std::un
 }
 
 void ThreadSafeQueueChannel_ClientToEngine::sendCancelOrder(int clientId, std::unique_ptr<CancelOrderMsg> msg) {
+    std::cout << "Received CancelOrder for order ID=" << msg->orderId()
+          << " from client " << clientId << std::endl;
     m_queue.push(std::move(msg));
 }
 

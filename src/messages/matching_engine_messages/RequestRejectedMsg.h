@@ -12,11 +12,10 @@
 
 namespace theter::matching_engine {
     enum class RequestRejectedReason {
-        Unknown,
-        InvalidPrice,
-        InvalidAmount,
-        DuplicateOrderId,
-        OrderNotFound
+        OrderNotFound,
+        NotOwner,
+        InvalidQuantity,
+        InvalidPrice
     };
 
     class RejectReason {

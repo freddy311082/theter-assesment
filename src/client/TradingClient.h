@@ -27,6 +27,7 @@ namespace theter::matching_engine {
         void handle(OrderCanceledMsg &msg, int clientId) override;
 
         void placeOrder(const Order& order);
+        void cancelOrder(int orderId);
 
 
     private:

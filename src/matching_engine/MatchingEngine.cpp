@@ -33,24 +33,75 @@ void MatchingEngine::registerClient(std::shared_ptr<TradingClient> client) {
     client->start();
 }
 
-void MatchingEngine::handle(PlaceOrderMsg& msg, int clientId) {
-    auto out = m_clientChannels[clientId];
-
-    auto order = std::make_unique<Order>(msg.order());
-    auto& matchingBook = (order->side == Side::Buy) ? m_sellBook : m_buyBook;
-    auto& ownBook = (order->side == Side::Buy) ? m_buyBook : m_sellBook;
-
-    auto [results, leftover] = matchingBook.match(std::move(order));
-
-    for (const auto& r : results) {
+void MatchingEngine::reportOrderTraded(PlaceOrderMsg &msg,
+                                       std::unordered_map<int, std::shared_ptr<IEngineToClientChannel> >::mapped_type
+                                       out, std::list<MatchResult> results) {
+    for (const auto &r: results) {
         out->sendOrderTraded(std::make_unique<OrderTradedMsg>(
             std::make_unique<Order>(msg.order()),
             r.tradedPrice,
             r.tradedAmount
         ));
     }
+}
+
+void MatchingEngine::updateOrderOwners(std::list<MatchResult> results) {
+    for (const auto& r : results) {
+        if (r.buyOrderFilled) {
+            m_orderOwners.erase(r.buyOrderId);
+        }
+        if (r.sellOrderFilled) {
+            m_orderOwners.erase(r.sellOrderId);
+        }
+    }
+}
+
+bool MatchingEngine::validateOrder(Order* order, IEngineToClientChannel* out) {
+    if (order->amount <= 0) {
+        auto reason = std::make_unique<RejectReason>(
+            RequestRejectedReason::InvalidQuantity,
+            "Invalid order quantity"
+        );
+        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
+            order->orderId,
+            std::move(reason)
+        ));
+        return false;
+    }
+
+    if (order->price <= 0) {
+        auto reason = std::make_unique<RejectReason>(
+            RequestRejectedReason::InvalidPrice,
+            "Invalid order price"
+        );
+        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
+            order->orderId,
+            std::move(reason)
+        ));
+        return false;
+    }
+
+    return true;
+}
+
+void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
+    auto out = m_clientChannels[clientId];
+
+    auto order = std::make_unique<Order>(msg.order());
+    auto &matchingBook = (order->side == Side::Buy) ? m_sellBook : m_buyBook;
+    auto &ownBook = (order->side == Side::Buy) ? m_buyBook : m_sellBook;
+
+    validateOrder(order.get(), out.get());
+
+
+    auto [results, leftover] = matchingBook.match(std::move(order));
+
+    reportOrderTraded(msg, out, results);
+
+    updateOrderOwners(results);
 
     if (leftover) {
+        m_orderOwners[leftover->orderId] = clientId;
         ownBook.addOrder(std::move(leftover));
 
         out->sendOrderPlaced(std::make_unique<OrderPlacedMsg>(
@@ -59,17 +110,36 @@ void MatchingEngine::handle(PlaceOrderMsg& msg, int clientId) {
     }
 }
 
-void MatchingEngine::handle(CancelOrderMsg& msg, int clientId) {
+void MatchingEngine::handle(CancelOrderMsg &msg, int clientId) {
     auto out = m_clientChannels[clientId];
+
+    auto it = m_orderOwners.find(msg.orderId());
+    if (it == m_orderOwners.end() || it->second != clientId) {
+        auto reason = std::make_unique<RejectReason>(
+            RequestRejectedReason::NotOwner,
+            "You are not the owner of this order"
+        );
+        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
+            msg.orderId(),
+            std::move(reason)
+        ));
+        return;
+    }
 
     bool removed = m_buyBook.cancelOrder(msg.orderId()) || m_sellBook.cancelOrder(msg.orderId());
 
     if (removed) {
+        m_orderOwners.erase(msg.orderId());
         out->sendOrderCanceled(std::make_unique<OrderCanceledMsg>(msg.orderId()));
     } else {
         auto reason = std::make_unique<RejectReason>(
-            RequestRejectedReason::OrderNotFound, "Order not found");
-        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(msg.orderId(), std::move(reason)));
+            RequestRejectedReason::OrderNotFound,
+            "Order not found"
+        );
+        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
+            msg.orderId(),
+            std::move(reason)
+        ));
     }
 }
 
@@ -95,3 +165,5 @@ void MatchingEngine::print() const {
 
     std::cout << "========================================================\n";
 }
+
+
