@@ -6,6 +6,7 @@
 #include "../client/TradingClient.h"
 
 #include "../communication_channel/ChannelFactory.h"
+#include <iostream>
 
 
 using namespace theter::matching_engine;
@@ -32,13 +33,14 @@ void MatchingEngine::registerClient(std::shared_ptr<TradingClient> client) {
     client->start();
 }
 
-void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
+void MatchingEngine::handle(PlaceOrderMsg& msg, int clientId) {
     auto out = m_clientChannels[clientId];
 
-    auto& book = (msg.order().side == Side::Buy) ? m_buyBook : m_sellBook;
+    auto order = std::make_unique<Order>(msg.order());
+    auto& matchingBook = (order->side == Side::Buy) ? m_sellBook : m_buyBook;
+    auto& ownBook = (order->side == Side::Buy) ? m_buyBook : m_sellBook;
 
-    auto orderCopy = std::make_unique<Order>(msg.order());
-    auto results = book.match(std::move(orderCopy));
+    auto [results, leftover] = matchingBook.match(std::move(order));
 
     for (const auto& r : results) {
         out->sendOrderTraded(std::make_unique<OrderTradedMsg>(
@@ -48,11 +50,14 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
         ));
     }
 
-    out->sendOrderPlaced(std::make_unique<OrderPlacedMsg>(
-        std::make_unique<Order>(msg.order())
-    ));
-}
+    if (leftover) {
+        ownBook.addOrder(std::move(leftover));
 
+        out->sendOrderPlaced(std::make_unique<OrderPlacedMsg>(
+            std::make_unique<Order>(msg.order())
+        ));
+    }
+}
 
 void MatchingEngine::handle(CancelOrderMsg& msg, int clientId) {
     auto out = m_clientChannels[clientId];
@@ -78,4 +83,15 @@ void MatchingEngine::stop() {
 
 MatchingEngine::~MatchingEngine() {
     stop();
+}
+
+void MatchingEngine::print() const {
+    std::cout << "\n================= Matching Engine State =================\n";
+    std::cout << "[ BUY ORDERS ]\n";
+    m_buyBook.print();
+
+    std::cout << "\n[ SELL ORDERS ]\n";
+    m_sellBook.print();
+
+    std::cout << "========================================================\n";
 }

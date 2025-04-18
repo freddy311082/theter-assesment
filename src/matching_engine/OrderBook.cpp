@@ -4,7 +4,7 @@
 
 #include "OrderBook.h"
 #include <functional>
-
+#include <iostream>
 
 using namespace theter::matching_engine;
 
@@ -20,8 +20,9 @@ void OrderBook::addOrder(std::unique_ptr<Order> order) {
     if (order->amount > 0 && m_side == order->side && !m_orderIndex.contains(order->orderId)) {
         m_orderIndex[order->orderId] = order.get();
         m_ordersByPrice[order->price].push_back(std::move(order));
+        std::cout << "✅ Order inserted\n";
     } else {
-        throw std::runtime_error("Invalid order");
+        std::cout << "❌ Order rejected (amount? side match? duplicate ID?)\n";
     }
 }
 
@@ -51,17 +52,17 @@ bool OrderBook::cancelOrder(int orderId) {
     return true;
 }
 
-std::list<MatchResult> OrderBook::match(std::unique_ptr<Order> incomingOrder) {
+std::pair<std::list<MatchResult>, std::unique_ptr<Order>> OrderBook::match(std::unique_ptr<Order> incomingOrder) {
     std::list<MatchResult> results;
     int remaining = incomingOrder->amount;
 
     for (auto priceIt = m_ordersByPrice.begin(); priceIt != m_ordersByPrice.end() && remaining > 0;) {
-        if ((m_side == Side::Buy && priceIt->first > incomingOrder->price) ||
-            (m_side == Side::Sell && priceIt->first < incomingOrder->price)) {
+        if ((m_side == Side::Buy && priceIt->first < incomingOrder->price) ||
+            (m_side == Side::Sell && priceIt->first > incomingOrder->price)) {
             break;
-        }
+            }
 
-        auto &orderList = priceIt->second;
+        auto& orderList = priceIt->second;
         processPriceLevel(orderList, priceIt->first, incomingOrder, remaining, results);
 
         if (orderList.empty()) {
@@ -73,14 +74,14 @@ std::list<MatchResult> OrderBook::match(std::unique_ptr<Order> incomingOrder) {
 
     if (remaining > 0) {
         incomingOrder->amount = remaining;
-        addOrder(std::move(incomingOrder));
+        return {results, std::move(incomingOrder)};
     }
 
-    return results;
+    return {results, nullptr};
 }
 
 MatchResult OrderBook::createMatchResult(std::unique_ptr<Order> &incomingOrder, int &remaining,
-                                  std::list<std::unique_ptr<Order> >::value_type &resting, int tradedAmount) {
+                                         std::list<std::unique_ptr<Order> >::value_type &resting, int tradedAmount) {
     MatchResult result;
     result.buyOrderId = (incomingOrder->side == Side::Buy) ? incomingOrder->orderId : resting->orderId;
     result.sellOrderId = (incomingOrder->side == Side::Sell) ? incomingOrder->orderId : resting->orderId;
@@ -93,15 +94,28 @@ MatchResult OrderBook::createMatchResult(std::unique_ptr<Order> &incomingOrder, 
     return result;
 }
 
+void OrderBook::print() const {
+    std::cout << (m_side == Side::Buy ? "Buy Book:\n" : "Sell Book:\n");
+    for (const auto &[price, orders]: m_ordersByPrice) {
+        for (const auto &order: orders) {
+            std::cout << "  Order ID: " << order->orderId
+                    << " | Price: " << price
+                    << " | Amount: " << order->amount << '\n';
+        }
+    }
+}
+
 void OrderBook::processPriceLevel(std::list<std::unique_ptr<Order> > &orderList,
                                   int price,
                                   std::unique_ptr<Order> &incomingOrder,
                                   int &remaining,
                                   std::list<MatchResult> &results) {
     for (auto orderIt = orderList.begin(); orderIt != orderList.end() && remaining > 0;) {
+        std::cout << "Entrando al for bestial" << std::endl;
         auto &resting = *orderIt;
 
         int tradedAmount = std::min(remaining, resting->amount);
+        std::cout << "Traded amount " << tradedAmount << " @ " << resting->price << "\n";
         remaining -= tradedAmount;
         resting->amount -= tradedAmount;
 
@@ -109,6 +123,7 @@ void OrderBook::processPriceLevel(std::list<std::unique_ptr<Order> > &orderList,
         results.push_back(result);
 
         if (resting->amount == 0) {
+            std::cout << "🗑️  Fully filled order removed → ID: " << resting->orderId << "\n";
             m_orderIndex.erase(resting->orderId);
             orderIt = orderList.erase(orderIt);
         } else {

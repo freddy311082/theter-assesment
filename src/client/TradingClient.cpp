@@ -68,6 +68,7 @@ void TradingClient::handle(OrderCanceledMsg &msg, int clientId) {
 }
 
 void TradingClient::placeOrder(const Order &order) {
+    std::cout << "📤 Enviando orden desde cliente: ID=" <<m_clientId << ", Order Id =" << order.orderId << std::endl;
     auto orderCopy = std::make_unique<Order>(order);
     auto msg = std::make_unique<PlaceOrderMsg>(std::move(orderCopy));
 

@@ -24,6 +24,8 @@ namespace theter::matching_engine {
         void stop();
         ~MatchingEngine();
 
+        void print() const;
+
 
     private:
         OrderBook m_buyBook{Side::Buy};

@@ -21,19 +21,38 @@ int main() {
     sellOrder.amount = 5;
     sellOrder.side = Side::Sell;
 
+    Order sellOrder2;
+    sellOrder2.orderId = 2;
+    sellOrder2.price = 100;
+    sellOrder2.amount = 56;
+    sellOrder2.side = Side::Sell;
+
     Order buyOrder;
-    buyOrder.orderId = 2;
+    buyOrder.orderId = 3;
     buyOrder.price = 100;
-    buyOrder.amount = 5;
+    buyOrder.amount = 3;
+    buyOrder.side = Side::Buy;
+    Order buyOrder2;
+    buyOrder.orderId = 4;
+    buyOrder.price = 100;
+    buyOrder.amount = 35;
     buyOrder.side = Side::Buy;
 
     client1->placeOrder(sellOrder);
-    client2->placeOrder(buyOrder);
+    client1->placeOrder(sellOrder2);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    client2->placeOrder(buyOrder);
+    client2->placeOrder(buyOrder2);
+    engine.print();
+
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(9000));
+    engine.print();
+
 
     client1->stop();
     client2->stop();
+
     engine.stop();
 
     return EXIT_SUCCESS;

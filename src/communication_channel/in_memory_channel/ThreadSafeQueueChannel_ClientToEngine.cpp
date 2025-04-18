@@ -4,6 +4,8 @@
 
 #include "ThreadSafeQueueChannel_ClientToEngine.h"
 
+#include <iostream>
+
 #include "../../messages/IMessageHandler.h"
 #include  "../../messages/handler/ClientMessageHandler.h"
 
@@ -19,6 +21,7 @@ void ThreadSafeQueueChannel_ClientToEngine::sendCancelOrder(int clientId, std::u
 }
 
 std::unique_ptr<Message> ThreadSafeQueueChannel_ClientToEngine::pop() {
+    std::cout << "👂 pop() desbloqueado para cliente " << m_clientId << std::endl;
     auto clientMsg = m_queue.pop();
     return std::unique_ptr<Message>(clientMsg.release());
 }
@@ -46,7 +49,7 @@ void ThreadSafeQueueChannel_ClientToEngine::join() {
 
 
 ThreadSafeQueueChannel_ClientToEngine::~ThreadSafeQueueChannel_ClientToEngine() {
-    void stop();
+    // void stop();
 }
 
 void ThreadSafeQueueChannel_ClientToEngine::setHandler(ClientMessageHandler* handler) {
@@ -58,6 +61,7 @@ void ThreadSafeQueueChannel_ClientToEngine::setClientId(int clientId) {
 }
 
 void ThreadSafeQueueChannel_ClientToEngine::start() {
+    std::cout << "🚀 Channel started for client " << m_clientId << std::endl;
     m_running = true;
     m_thread = std::thread([&]() {
         while (m_running) {

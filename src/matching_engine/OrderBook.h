@@ -32,9 +32,10 @@ namespace theter::matching_engine {
         bool cancelOrder(int orderId);
 
 
-        std::list<MatchResult> match(std::unique_ptr<Order> incomingOrder);
+        std::pair<std::list<MatchResult>, std::unique_ptr<Order>> match(std::unique_ptr<Order> incomingOrder);
 
         Side side() const { return m_side; }
+        void print() const;
 
     private:
         void processPriceLevel(std::list<std::unique_ptr<Order>>& orderList,
