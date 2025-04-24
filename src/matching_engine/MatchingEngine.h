@@ -20,7 +20,7 @@ namespace theter::matching_engine {
         void registerClient(std::shared_ptr<TradingClient> client);
 
         void reportOrderTraded(PlaceOrderMsg &msg,
-                               std::unordered_map<int, std::shared_ptr<IEngineToClientChannel>>::mapped_type out,
+                               IEngineToClientChannel* out,
                                std::list<MatchResult> results);
 
         void updateOrderOwners(std::list<MatchResult> results);
@@ -35,12 +35,13 @@ namespace theter::matching_engine {
     private:
         OrderBook m_buyBook{Side::Buy};
         OrderBook m_sellBook{Side::Sell};
-        std::unordered_map<int, std::shared_ptr<IEngineToClientChannel> > m_clientChannels;
-        bool validateOrder(Order *order, IEngineToClientChannel *out);
 
+        std::unordered_map<int, std::shared_ptr<IEngineToClientChannel> > m_clientChannels;
         std::unordered_map<int, std::shared_ptr<IClientToEngineChannel>> m_clientInputChannels;
+
+        bool validateOrder(Order *order, IEngineToClientChannel *out);
         std::unordered_map<int, int> m_orderOwners;
-        std::mutex m_mutex;
+        std::recursive_mutex m_mutex;
 
     };
 }

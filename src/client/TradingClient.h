@@ -35,8 +35,8 @@ namespace theter::matching_engine {
     private:
 
         int m_clientId = IdGenerator::nextId();
-        std::shared_ptr<IClientToEngineChannel> m_clientToEngineChannel;
-        std::shared_ptr<IEngineToClientChannel> m_engineToClientChannel;
+        std::weak_ptr<IClientToEngineChannel> m_clientToEngineChannel;
+        std::weak_ptr<IEngineToClientChannel> m_engineToClientChannel;
 
         std::atomic<bool> m_listening = false;
         std::thread m_thread;

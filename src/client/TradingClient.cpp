@@ -20,7 +20,7 @@ void TradingClient::registerClientToEngineChannel(
 void TradingClient::start() {
     m_listening = true;
     
-    if (auto channel = m_engineToClientChannel; channel != nullptr) {
+    if (auto channel = m_engineToClientChannel.lock(); channel != nullptr) {
         m_thread = std::thread([this, channel]() {
             while (m_listening) {
                 auto msg = channel->pop();
@@ -33,7 +33,7 @@ void TradingClient::start() {
 }
 
 void TradingClient::stop() {
-    if (auto channel = m_engineToClientChannel) {
+    if (auto channel = m_engineToClientChannel.lock()) {
         channel->closeChannel();
     }
 
@@ -66,13 +66,13 @@ void TradingClient::placeOrder(const Order &order) {
     auto orderCopy = std::make_unique<Order>(order);
     auto msg = std::make_unique<PlaceOrderMsg>(std::move(orderCopy));
 
-    m_clientToEngineChannel->sendPlaceOrder(m_clientId, std::move(msg));
+    m_clientToEngineChannel.lock()->sendPlaceOrder(m_clientId, std::move(msg));
 }
 
 void TradingClient::cancelOrder(int orderId) {
     std::cout << "Client " << m_clientId << " is requesting to cancel order ID=" << orderId << std::endl;
 
-    if (auto channel = m_clientToEngineChannel) {
+    if (auto channel = m_clientToEngineChannel.lock()) {
         channel->sendCancelOrder(m_clientId, std::make_unique<CancelOrderMsg>(orderId));
     } else {
         std::cerr << "Client " << m_clientId << " has no active channel to cancel order." << std::endl;
