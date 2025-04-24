@@ -34,8 +34,8 @@ void MatchingEngine::registerClient(std::shared_ptr<TradingClient> client) {
 }
 
 void MatchingEngine::reportOrderTraded(PlaceOrderMsg &msg,
-                                       std::unordered_map<int, std::shared_ptr<IEngineToClientChannel> >::mapped_type
-                                       out, std::list<MatchResult> results) {
+                                       IEngineToClientChannel *out,
+                                       std::list<MatchResult> results) {
     for (const auto &r: results) {
         out->sendOrderTraded(std::make_unique<OrderTradedMsg>(
             std::make_unique<Order>(msg.order()),
@@ -46,7 +46,7 @@ void MatchingEngine::reportOrderTraded(PlaceOrderMsg &msg,
 }
 
 void MatchingEngine::updateOrderOwners(std::list<MatchResult> results) {
-    for (const auto& r : results) {
+    for (const auto &r: results) {
         if (r.buyOrderFilled) {
             m_orderOwners.erase(r.buyOrderId);
         }
@@ -56,7 +56,7 @@ void MatchingEngine::updateOrderOwners(std::list<MatchResult> results) {
     }
 }
 
-bool MatchingEngine::validateOrder(Order* order, IEngineToClientChannel* out) {
+bool MatchingEngine::validateOrder(Order *order, IEngineToClientChannel *out) {
     if (order->amount <= 0) {
         auto reason = std::make_unique<RejectReason>(
             RequestRejectedReason::InvalidQuantity,
@@ -99,7 +99,7 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
 
     auto [results, leftover] = matchingBook.match(std::move(order));
 
-    reportOrderTraded(msg, out, results);
+    reportOrderTraded(msg, out.get(), results);
 
     updateOrderOwners(results);
 
@@ -117,8 +117,7 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
 }
 
 void MatchingEngine::handle(CancelOrderMsg &msg, int clientId) {
-    auto out = m_clientChannels[clientId];
-    {
+    auto out = m_clientChannels[clientId]; {
         std::lock_guard lock(m_mutex);
 
         auto it = m_orderOwners.find(msg.orderId());
@@ -172,5 +171,3 @@ MatchingEngine::~MatchingEngine() {
         clientChannel.second->closeChannel();
     }
 }
-
-
