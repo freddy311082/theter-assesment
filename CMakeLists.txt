@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.31)
+cmake_minimum_required(VERSION 3.30)
 project(theter_matching_engine)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -43,4 +43,5 @@ add_executable(theter_matching_engine main.cpp
         src/client/TradingClient.h
         src/communication_channel/IChannelBase.h
         src/communication_channel/ChannelFactory.h
-        src/messages/handler/ClientMessageHandler.h)
+        src/messages/handler/MessageHandler.h
+        src/messages/handler/MessageHandler.cpp)

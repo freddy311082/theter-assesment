@@ -27,10 +27,9 @@ namespace theter::matching_engine {
 
         void handle(PlaceOrderMsg &msg, int clientId) override;
         void handle(CancelOrderMsg &msg, int clientId) override;
-        void stop();
-        ~MatchingEngine();
 
         void print() const;
+        ~MatchingEngine();
 
 
     private:
@@ -39,10 +38,9 @@ namespace theter::matching_engine {
         std::unordered_map<int, std::shared_ptr<IEngineToClientChannel> > m_clientChannels;
         bool validateOrder(Order *order, IEngineToClientChannel *out);
 
-        std::atomic<bool> m_listening = false;
-        std::thread m_thread;
         std::unordered_map<int, std::shared_ptr<IClientToEngineChannel>> m_clientInputChannels;
         std::unordered_map<int, int> m_orderOwners;
+        std::mutex m_mutex;
 
     };
 }

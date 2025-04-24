@@ -30,10 +30,13 @@ namespace theter::matching_engine {
         void cancelOrder(int orderId);
 
 
+
+
     private:
+
         int m_clientId = IdGenerator::nextId();
         std::shared_ptr<IClientToEngineChannel> m_clientToEngineChannel;
-        std::weak_ptr<IEngineToClientChannel> m_engineToClientChannel;
+        std::shared_ptr<IEngineToClientChannel> m_engineToClientChannel;
 
         std::atomic<bool> m_listening = false;
         std::thread m_thread;

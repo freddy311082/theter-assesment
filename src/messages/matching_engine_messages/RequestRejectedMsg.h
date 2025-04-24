@@ -42,7 +42,7 @@ namespace theter::matching_engine {
         int orderId() const { return m_orderId; }
         RejectReason &reason() const { return *m_reason; }
 
-        void handleWith(EngineMessageHandler &handler, int clientId) override {
+        void handleBy(EngineMessageHandler &handler, int clientId) override {
             handler.handle(*this, clientId);
         }
 

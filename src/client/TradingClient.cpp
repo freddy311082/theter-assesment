@@ -19,27 +19,21 @@ void TradingClient::registerClientToEngineChannel(
 
 void TradingClient::start() {
     m_listening = true;
-    if (auto channel = m_engineToClientChannel.lock()) {
+    
+    if (auto channel = m_engineToClientChannel; channel != nullptr) {
         m_thread = std::thread([this, channel]() {
             while (m_listening) {
                 auto msg = channel->pop();
-                if (!msg) break;
-
-                // TODO: remove this cast, let it here just for testing
-                if (auto engineMsg = dynamic_cast<MatchingEngineMsg *>(msg.get())) {
-                    if (engineMsg == nullptr) {
-                        std::cout << "❌ dynamic_cast a MatchingEngineMsg* falló\n";
-                        continue;
-                    }
-                    engineMsg->handleWith(*this, m_clientId);
-                }
+                if (!msg)
+                    break; // empty and closed queue
+                msg->dispatchTo(this, m_clientId);
             }
         });
     }
 }
 
 void TradingClient::stop() {
-    if (auto channel = m_engineToClientChannel.lock()) {
+    if (auto channel = m_engineToClientChannel) {
         channel->closeChannel();
     }
 

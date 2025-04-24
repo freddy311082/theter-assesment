@@ -9,6 +9,7 @@
 namespace theter::matching_engine {
 
     class ClientMessageHandler;
+    class MessageHandler;
 
     enum class MsgType {
         ClientMsg,
@@ -20,11 +21,14 @@ namespace theter::matching_engine {
     public:
         int Id() const {return m_id;}
         virtual ~Message() = default;
+        virtual void dispatchTo(MessageHandler* handler, int clientId) = 0;
 
     protected:
         Message(MsgType side) : m_side(side) {
             m_id = IdGenerator::nextId();
         }
+
+
 
         MsgType m_side;
         int m_id;

@@ -8,7 +8,7 @@
 
 #include "MatchingEngineMsg.h"
 #include "../../orders/Order.h"
-#include "../handler/ClientMessageHandler.h"
+#include "../handler/MessageHandler.h"
 
 
 namespace theter::matching_engine {
@@ -18,7 +18,7 @@ namespace theter::matching_engine {
         OrderPlacedMsg(std::unique_ptr<Order> order) : m_order(std::move(order)) {
         }
 
-        void handleWith(EngineMessageHandler &handler, int clientId) override {
+        void handleBy(EngineMessageHandler &handler, int clientId) override {
             handler.handle(*this, clientId);
         }
 

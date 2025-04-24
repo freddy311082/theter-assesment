@@ -8,7 +8,7 @@
 
 #include "MatchingEngineMsg.h"
 #include "../../orders/Order.h"
-#include "../handler/ClientMessageHandler.h"
+#include "../handler/MessageHandler.h"
 
 
 namespace theter::matching_engine {
@@ -27,7 +27,7 @@ namespace theter::matching_engine {
         int orderId() const { return m_order->orderId; }
         int amountRemaining() const { return m_order->amount - m_tradedAmount; }
 
-        void handleWith(EngineMessageHandler &handler, int clientId) override {
+        void handleBy(EngineMessageHandler &handler, int clientId) override {
             handler.handle(*this, clientId);
         }
 

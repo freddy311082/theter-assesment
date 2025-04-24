@@ -14,7 +14,7 @@ namespace theter::matching_engine {
         OrderCanceledMsg(int orderId) : m_orderId(orderId) {
         }
 
-        void handleWith(EngineMessageHandler &handler, int clientId) override {
+        void handleBy(EngineMessageHandler &handler, int clientId) override {
             handler.handle(*this, clientId);
         }
 

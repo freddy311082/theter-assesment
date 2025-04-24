@@ -21,14 +21,19 @@ namespace theter::matching_engine {
         ThreadSafeQueue& operator=(const ThreadSafeQueue&) = delete;
 
         void push(T value) {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_queue.push(std::move(value));
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_queue.push(std::move(value));
+            }
             m_cond.notify_one();
         }
 
         T pop() {
             std::unique_lock<std::mutex> lock(m_mutex);
-            m_cond.wait(lock, [this]() { return !m_queue.empty(); });
+            m_cond.wait(lock, [&]() { return !m_queue.empty() || m_closed; });
+
+            if (m_queue.empty())
+                return T{};
 
             T value = std::move(m_queue.front());
             m_queue.pop();
@@ -45,10 +50,20 @@ namespace theter::matching_engine {
             return m_queue.size();
         }
 
+        void close() {
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_closed = true;
+            }
+            m_cond.notify_all();
+        }
+
     private:
         mutable std::mutex m_mutex;
         std::queue<T> m_queue;
         std::condition_variable m_cond;
+
+        bool m_closed = false;
     };
 }
 

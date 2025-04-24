@@ -88,6 +88,9 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
     auto out = m_clientChannels[clientId];
 
     auto order = std::make_unique<Order>(msg.order());
+
+    if (order->side == Side::Buy)
+        std::cout << "Placing buy order with ID = " << order->orderId << std::endl;
     auto &matchingBook = (order->side == Side::Buy) ? m_sellBook : m_buyBook;
     auto &ownBook = (order->side == Side::Buy) ? m_buyBook : m_sellBook;
 
@@ -101,7 +104,10 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
     updateOrderOwners(results);
 
     if (leftover) {
-        m_orderOwners[leftover->orderId] = clientId;
+        {
+            std::lock_guard lock(m_mutex);
+            m_orderOwners[leftover->orderId] = clientId;
+        }
         ownBook.addOrder(std::move(leftover));
 
         out->sendOrderPlaced(std::make_unique<OrderPlacedMsg>(
@@ -112,24 +118,30 @@ void MatchingEngine::handle(PlaceOrderMsg &msg, int clientId) {
 
 void MatchingEngine::handle(CancelOrderMsg &msg, int clientId) {
     auto out = m_clientChannels[clientId];
+    {
+        std::lock_guard lock(m_mutex);
 
-    auto it = m_orderOwners.find(msg.orderId());
-    if (it == m_orderOwners.end() || it->second != clientId) {
-        auto reason = std::make_unique<RejectReason>(
-            RequestRejectedReason::NotOwner,
-            "You are not the owner of this order"
-        );
-        out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
-            msg.orderId(),
-            std::move(reason)
-        ));
-        return;
+        auto it = m_orderOwners.find(msg.orderId());
+        if (it == m_orderOwners.end() || it->second != clientId) {
+            auto reason = std::make_unique<RejectReason>(
+                RequestRejectedReason::NotOwner,
+                "You are not the owner of this order"
+            );
+            out->sendRequestRejected(std::make_unique<RequestRejectedMsg>(
+                msg.orderId(),
+                std::move(reason)
+            ));
+            return;
+        }
     }
 
     bool removed = m_buyBook.cancelOrder(msg.orderId()) || m_sellBook.cancelOrder(msg.orderId());
 
     if (removed) {
-        m_orderOwners.erase(msg.orderId());
+        {
+            std::lock_guard lock(m_mutex);
+            m_orderOwners.erase(msg.orderId());
+        }
         out->sendOrderCanceled(std::make_unique<OrderCanceledMsg>(msg.orderId()));
     } else {
         auto reason = std::make_unique<RejectReason>(
@@ -144,17 +156,6 @@ void MatchingEngine::handle(CancelOrderMsg &msg, int clientId) {
 }
 
 
-void MatchingEngine::stop() {
-    m_listening = false;
-
-    if (m_thread.joinable())
-        m_thread.join();
-}
-
-MatchingEngine::~MatchingEngine() {
-    stop();
-}
-
 void MatchingEngine::print() const {
     std::cout << "\n================= Matching Engine State =================\n";
     std::cout << "[ BUY ORDERS ]\n";
@@ -164,6 +165,12 @@ void MatchingEngine::print() const {
     m_sellBook.print();
 
     std::cout << "========================================================\n";
+}
+
+MatchingEngine::~MatchingEngine() {
+    for (auto &clientChannel: m_clientChannels) {
+        clientChannel.second->closeChannel();
+    }
 }
 
 

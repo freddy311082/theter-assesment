@@ -10,15 +10,18 @@ namespace theter::matching_engine {
 
     class PlaceOrderMsg;
     class CancelOrderMsg;
+    class Message;
 
-    class ClientMessageHandler {
+    class MessageHandler {
+    public:
+        virtual ~MessageHandler() = default;
+    };
+
+    class ClientMessageHandler : public MessageHandler {
     public:
         virtual void handle(PlaceOrderMsg& msg, int clientId) = 0;
         virtual void handle(CancelOrderMsg& msg, int clientId) = 0;
-
-        virtual ~ClientMessageHandler() = default;
     };
-
 
 
 
@@ -27,18 +30,14 @@ namespace theter::matching_engine {
     class OrderPlacedMsg;
     class OrderCanceledMsg;
 
-    class EngineMessageHandler {
+    class EngineMessageHandler : public MessageHandler {
     public:
         virtual void handle(OrderTradedMsg& msg, int clientId) = 0;
         virtual void handle(RequestRejectedMsg& msg, int clientId) = 0;
         virtual void handle(OrderPlacedMsg& msg, int clientId) = 0;
         virtual void handle(OrderCanceledMsg& msg, int clientId) = 0;
-
-
-        virtual ~EngineMessageHandler() = default;
     };
 }
-
 
 
 #endif //MESSAGEHANDLER_H

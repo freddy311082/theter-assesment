@@ -3,10 +3,10 @@
 //
 #include "PlaceOrderMsg.h"
 
-#include "../handler/ClientMessageHandler.h"
+#include "../handler/MessageHandler.h"
 
 using namespace theter::matching_engine;
 
-void PlaceOrderMsg::handleWith(ClientMessageHandler &handler, int clientId) {
+void PlaceOrderMsg::handleBy(ClientMessageHandler &handler, int clientId) {
     handler.handle(*this, clientId);
 }

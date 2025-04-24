@@ -12,7 +12,7 @@ namespace theter::matching_engine {
     class CancelOrderMsg : public ClientMsg {
     public:
         explicit CancelOrderMsg(int orderId) : m_orderId(orderId) {}
-        void handleWith(ClientMessageHandler &handler, int clientId) override;
+        void handleBy(ClientMessageHandler &handler, int clientId) override;
 
         int orderId() const { return m_orderId; }
 

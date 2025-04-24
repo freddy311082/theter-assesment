@@ -29,6 +29,7 @@ namespace theter::matching_engine {
         ThreadSafeQueue<std::unique_ptr<MatchingEngineMsg> > m_queue;
         int m_clientId = -1;
         EngineMessageHandler *m_handler = nullptr;
+        std::condition_variable m_cv;
     };
 }
 

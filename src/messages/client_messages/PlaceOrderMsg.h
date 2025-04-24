@@ -16,7 +16,7 @@ namespace theter::matching_engine {
         PlaceOrderMsg(std::unique_ptr<Order> order) : m_order(std::move(order)) {
         }
 
-        void handleWith(ClientMessageHandler &handler, int clientId) override;
+        void handleBy(ClientMessageHandler &handler, int clientId) override;
 
         const Order& order() const { return *m_order; }
     private:

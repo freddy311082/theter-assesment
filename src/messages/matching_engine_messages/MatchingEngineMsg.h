@@ -13,7 +13,8 @@ namespace theter::matching_engine {
 
     class MatchingEngineMsg : public Message {
     public:
-        virtual void handleWith(EngineMessageHandler& handler, int clientId) = 0;
+        virtual void handleBy(EngineMessageHandler& handler, int clientId) = 0;
+        void dispatchTo(MessageHandler* handler, int clientId) override;
     protected:
         MatchingEngineMsg() : Message(MsgType::MatchingEngineMsg) {
         }

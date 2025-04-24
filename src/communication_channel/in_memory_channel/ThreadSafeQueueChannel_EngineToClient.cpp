@@ -30,7 +30,7 @@ std::unique_ptr<Message> ThreadSafeQueueChannel_EngineToClient::pop() {
 }
 
 void ThreadSafeQueueChannel_EngineToClient::closeChannel() {
-    m_queue.push(nullptr);
+    m_queue.close();
 }
 
 void ThreadSafeQueueChannel_EngineToClient::setHandler(EngineMessageHandler *handler) {

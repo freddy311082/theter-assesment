@@ -3,10 +3,10 @@
 //
 #include "CancelOrderMsg.h"
 
-#include "../handler/ClientMessageHandler.h"
+#include "../handler/MessageHandler.h"
 
 using namespace theter::matching_engine;
 
-void CancelOrderMsg::handleWith(ClientMessageHandler &handler, int clientId) {
+void CancelOrderMsg::handleBy(ClientMessageHandler &handler, int clientId) {
     handler.handle(*this, clientId);
 }

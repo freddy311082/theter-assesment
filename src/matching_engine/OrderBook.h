@@ -38,18 +38,20 @@ namespace theter::matching_engine {
         void print() const;
 
     private:
-        void processPriceLevel(std::list<std::unique_ptr<Order>>& orderList,
-                                   int price,
-                                   std::unique_ptr<Order>& incomingOrder,
-                                   int& remaining,
-                                   std::list<MatchResult>& results);
+        void processPriceLevel(std::list<std::unique_ptr<Order>> &orderList,
+                               int price,
+                               std::unique_ptr<Order> &incomingOrder,
+                               int &remaining,
+                               std::list<MatchResult> &results, std::list<int> &ordersToBeRemoved);
         MatchResult createMatchResult(std::unique_ptr<Order> &incomingOrder, int &remaining,
                                std::list<std::unique_ptr<Order>>::value_type &resting, int tradedAmount);
+
+        void removeFilledOrders(std::list<int> orderIds);
 
         Side m_side;
         std::map<int, std::list<std::unique_ptr<Order> >, std::function<bool(int, int)> > m_ordersByPrice;
         std::unordered_map<int, Order *> m_orderIndex;
-
+        std::mutex m_mutex;
 
     };
 }
